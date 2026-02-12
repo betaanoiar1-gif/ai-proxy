@@ -1,0 +1,24 @@
+﻿name: ai-proxy
+
+on:
+  workflow_dispatch:
+    inputs:
+      prompt:
+        description: "User prompt"
+        required: true
+        type: string
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Run model (free) via hosted Python
+        env:
+          PROMPT: ${{ inputs.prompt }}
+        run: |
+          python - <<'PY'
+import os, json
+prompt = os.environ.get('PROMPT','')
+# Minimal stub: echo prompt as response for now (we will improve if needed)
+print(json.dumps({"reply": f"[AI-Proxy Echo] {prompt}"}))
+PY
