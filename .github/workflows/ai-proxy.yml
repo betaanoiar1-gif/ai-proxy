@@ -1,4 +1,4 @@
-﻿name: ai-proxy
+name: ai-proxy
 
 on:
   workflow_dispatch:
@@ -22,14 +22,14 @@ jobs:
           REQUEST_ID: ${{ inputs.request_id }}
         run: |
           python - <<'PY'
-import os, json
-prompt = os.environ.get('PROMPT','')
-request_id = os.environ.get('REQUEST_ID','')
-response = {"request_id": request_id, "reply": f"[AI-Proxy Echo] {prompt}"}
-with open('response.json','w', encoding='utf-8') as f:
-    json.dump(response, f, ensure_ascii=False)
-print(json.dumps(response, ensure_ascii=False))
-PY
+          import os, json
+          prompt = os.environ.get('PROMPT', '')
+          request_id = os.environ.get('REQUEST_ID', '')
+          response = {"request_id": request_id, "reply": f"[AI-Proxy Echo] {prompt}"}
+          with open('response.json', 'w', encoding='utf-8') as f:
+              json.dump(response, f, ensure_ascii=False)
+          print(json.dumps(response, ensure_ascii=False))
+          PY
       - name: Upload response artifact
         uses: actions/upload-artifact@v4
         with:
