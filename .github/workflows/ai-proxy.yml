@@ -1,4 +1,4 @@
-name: ai-proxy
+﻿name: ai-proxy
 
 on:
   workflow_dispatch:
@@ -20,16 +20,54 @@ jobs:
         env:
           PROMPT: ${{ inputs.prompt }}
           REQUEST_ID: ${{ inputs.request_id }}
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          OPENROUTER_MODEL: ${{ vars.OPENROUTER_MODEL }}
         run: |
           python - <<'PY'
-          import os, json
-          prompt = os.environ.get('PROMPT', '')
-          request_id = os.environ.get('REQUEST_ID', '')
-          response = {"request_id": request_id, "reply": f"[AI-Proxy Echo] {prompt}"}
-          with open('response.json', 'w', encoding='utf-8') as f:
-              json.dump(response, f, ensure_ascii=False)
+          import os
+          import json
+          import urllib.request
+
+          prompt = os.environ.get("PROMPT", "")
+          request_id = os.environ.get("REQUEST_ID", "")
+          api_key = os.environ.get("OPENROUTER_API_KEY", "")
+          model = os.environ.get("OPENROUTER_MODEL", "mistralai/mistral-7b-instruct:free")
+
+          if not api_key:
+            response = {
+              "request_id": request_id,
+              "reply": "GitHub secret OPENROUTER_API_KEY is missing."
+            }
+          else:
+            payload = {
+              "model": model,
+              "messages": [{"role": "user", "content": prompt}]
+            }
+            req = urllib.request.Request(
+              "https://openrouter.ai/api/v1/chat/completions",
+              data=json.dumps(payload).encode("utf-8"),
+              headers={
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {api_key}",
+                "HTTP-Referer": "https://github.com",
+                "X-Title": "ai-proxy"
+              },
+              method="POST"
+            )
+
+            try:
+              with urllib.request.urlopen(req, timeout=40) as r:
+                data = json.loads(r.read().decode("utf-8"))
+                reply = data.get("choices", [{}])[0].get("message", {}).get("content", "")
+                response = {"request_id": request_id, "reply": reply or "Empty model response."}
+            except Exception as e:
+              response = {"request_id": request_id, "reply": f"AI proxy error: {str(e)}"}
+
+          with open("response.json", "w", encoding="utf-8") as f:
+            json.dump(response, f, ensure_ascii=False)
           print(json.dumps(response, ensure_ascii=False))
           PY
+
       - name: Upload response artifact
         uses: actions/upload-artifact@v4
         with:
