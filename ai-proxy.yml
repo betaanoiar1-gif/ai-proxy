@@ -1,4 +1,4 @@
-﻿name: ai-proxy
+name: ai-proxy
 
 on:
   workflow_dispatch:
