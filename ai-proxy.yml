@@ -7,18 +7,32 @@ on:
         description: "User prompt"
         required: true
         type: string
+      request_id:
+        description: "Request id"
+        required: true
+        type: string
 
 jobs:
   run:
     runs-on: ubuntu-latest
     steps:
-      - name: Run model (free) via hosted Python
+      - name: Build response
         env:
           PROMPT: ${{ inputs.prompt }}
+          REQUEST_ID: ${{ inputs.request_id }}
         run: |
           python - <<'PY'
 import os, json
 prompt = os.environ.get('PROMPT','')
-# Minimal stub: echo prompt as response for now (we will improve if needed)
-print(json.dumps({"reply": f"[AI-Proxy Echo] {prompt}"}))
+request_id = os.environ.get('REQUEST_ID','')
+response = {"request_id": request_id, "reply": f"[AI-Proxy Echo] {prompt}"}
+with open('response.json','w', encoding='utf-8') as f:
+    json.dump(response, f, ensure_ascii=False)
+print(json.dumps(response, ensure_ascii=False))
 PY
+      - name: Upload response artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: response-${{ inputs.request_id }}
+          path: response.json
+          if-no-files-found: error
